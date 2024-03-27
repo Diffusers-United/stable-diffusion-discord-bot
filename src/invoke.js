@@ -70,6 +70,7 @@ const initHost=async(host)=>{
         }
         host.lastInit = now
         queueStatus(host) // connect, prune old jobs from queue
+        console.log("Host from InitHost", host);
         if(host.socket.connected===false){subscribeQueue(host,host.name)}
     } catch (err) {
         if(host.online===true||!host.lastFail){
@@ -287,6 +288,7 @@ buildGraphFromJob = async(job)=>{ // Build new nodes graph based on job details
     }
     // insert job metadata into string, pipe to metadata_item, pipe to metadata , pipe to collect alongside core_metadata output, into merge_metadata as final meta output
     node('string',{value:buildWorkflowFromJob(job)},[])
+    console.log("metadata host", job.host);
     node('metadata_item',{label:job.host.name},[pipe(lastid.string,'value','SELF','value')])
     node('metadata',{},[pipe(lastid.metadata_item,'item','SELF','items')]) // fails with no error when uncommented
     node('core_metadata',metaObject,[])
