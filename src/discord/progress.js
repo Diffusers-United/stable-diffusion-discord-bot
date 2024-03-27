@@ -34,6 +34,7 @@ returnProgressMessage = (batchid) =>{
     // Return a formatted discord message tracking progress for a specific batchid
     let err = false
     try {
+        console.log("BatchID ", batchid);
         let r = resultCache.get(batchid)
         let content= ''//+batchid
         file=null
@@ -56,14 +57,12 @@ returnProgressMessage = (batchid) =>{
             }
             // Cannot edit attachments on an existing message
             /// Can edit image urls if we have public url
-            /*
             if(r.progress?.progress_image){
-                //debugLog('progress image')
-                //debugLog(r.progress.progress_image)
+                debugLog('progress image')
+                debugLog(r.progress.progress_image)
                 filename='preview-'+getUUID()+'.png'
                 file=[{file:r.progress.progress_image,name:filename}]
             }
-            */
         let components = [{type:1,components:[{type:2,style:4,label:'Cancel',custom_id:'cancelBatch-'+batchid,emoji:{name:'🗑️',id:null},disabled:false}]}]
         let msg = {embeds: [{description:content}],components:components}
         if(file){

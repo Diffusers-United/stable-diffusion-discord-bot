@@ -563,7 +563,7 @@ const subscribeQueue = async(host,name='arty')=>{
             log(host.name+' '+msg.queue_batch_id.dim+' '+msg.order+' : '+msg.step+' / '.dim+msg.total_steps)
             let buf=null
             // decode progress images
-            //if(msg.progress_image?.dataURL){buf = Buffer.from(msg.progress_image.dataURL.split(','[1], 'base64'))}
+            if(msg.progress_image?.dataURL){buf = Buffer.from(msg.progress_image.dataURL.split(','[1], 'base64'))}
             resultCache.edit(msg.queue_batch_id,'progress',{
                 step:msg.step,
                 total_steps:msg.total_steps,
@@ -626,7 +626,7 @@ batchToImages = async(host,batchid)=>{
             console.log('batchToImages  FAILED', job);
             return {error:'Job failed'}
         }
-        await sleep(1000)
+        await sleep(500)
     }
 }
 
