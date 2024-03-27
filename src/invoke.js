@@ -518,6 +518,7 @@ const findHost = async(job=null)=>{
 
 const subscribeQueue = async(host,name='arty')=>{
     let socket = host.socket
+    console.log("Whats inside of a host", host)
     try{
         socket.on('connect',()=>{
             socket.emit('subscribe_queue',{"queue_id":name})
