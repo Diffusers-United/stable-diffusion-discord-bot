@@ -83,7 +83,7 @@ var slashCommands = [
       if(img){job.initimg=img}
       job = await invoke.validateJob(job)
       job.creator=await getCreatorInfoFromInteraction(i)
-      job = await auth.userAllowedJob(job)
+      job = await auth.userAllowedJob(job, invoke.getJobCost(job))
       if(job.error){
           const error = job.error;
           log('Error: '.bgRed+' '+error)
