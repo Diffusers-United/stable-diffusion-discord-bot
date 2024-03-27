@@ -95,7 +95,7 @@ If the creator or bot admin adds a 🙈 / `:see_no_evil:` it will move the rende
 If the creator or bot admin adds a negative emoji (👎⚠️❌💩) it will be deleted
 
 # admin only commands
-
+!!!
 `!wipequeue` the nuclear option, delete the full job queue (old and new) and start fresh
 `!queue` shows queue status
 `!cancel` sends cancel command to invokeai backend (WIP, buggy)
@@ -107,7 +107,7 @@ If the creator or bot admin adds a negative emoji (👎⚠️❌💩) it will be
 
 `!restart` quits the bot process, trigger an automatic restart
 
-`!credit 123 @username @user2` manually give credits to mentioned accounts
+`!addcredit 123 @username @user2` manually give credits to mentioned accounts
 
 `!say channelid message here`  broadcasts a message as arty to channelid
 

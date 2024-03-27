@@ -531,7 +531,7 @@ const findHost = async (job = null) => {
     // get qualified hosts that are idle right now (if any, based on result cache)
     let rc = resultCache.get();
     let filteredHostsIdle = filteredHosts.filter(h => {
-      return ![...rc.values()].some(job => job.hostname === h.name);
+      return !Object.values(rc).some(job => job.hostname === h.name);
     });
   
     // return a random idle qualified host if available
@@ -541,7 +541,7 @@ const findHost = async (job = null) => {
   
     // otherwise, find the least busy host
     let hostCounts = {};
-    [...rc.values()].forEach(job => {
+    Object.values(rc).forEach(job => {
       if (hostCounts[job.hostname] === undefined) {
         hostCounts[job.hostname] = 1;
       } else {
@@ -555,7 +555,7 @@ const findHost = async (job = null) => {
   
     return sortedHosts[0];
   };
-
+  
 const subscribeQueue = async(host,name='arty')=>{
     // console.log("Host subscribeQueue", host);
     let socket = host.socket
