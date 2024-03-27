@@ -81,8 +81,10 @@ userAllowedFeature=async(user,feature)=>{
 }
 userAllowedJob=async(job)=>{
     if(job.error){return job}// is job errored already
-    let balance = await credits.balance(job.creator)// do they have the funds
-    if(balance<job.cost){job.error = 'Insufficient :coin:'; return job}
+
+    const userBalance = job.creator.credits;
+
+    if(userBalance<job.cost){job.error = 'Insufficient :coin:'; return job}
     let modelAllowed = await userAllowedFeature(job.creator,job.model.base_model) // check model type allowed
     if(!modelAllowed){job.error=job.model.base_model+' is for members only'}
     return job

@@ -51,87 +51,65 @@ var slashCommands = [
       {type: 3, name: 'control', description: 'controlnet mode to use with attachment', required: false, min_length: 3, max_length:40},
     ],
     cooldown: 500,
-  execute: async(i) => {
-    let img,imgurl
-    let userid=i.member?.id??i.user?.id
-    let username=i.member?.username??i.user?.username
-    if (i.data.resolved && i.data.resolved.attachments && i.data.resolved.attachments.find(a=>a.contentType.startsWith('image/'))){
-      let attachmentOrig=i.data.resolved.attachments.find(a=>a.contentType.startsWith('image/'))
-      imgurl = attachmentOrig.url
-      img = await urlToBuffer(imgurl)
-    }
-    log(username+' triggered dream command')
-    let job={}
-    try {
-      let trackingmsg = await i.createMessage({content:':saluting_face: dreaming '+timestamp()})
-      job.tracking = {type:'discord',msg:trackingmsg}
-    } catch (err) {
-      debugLog('Error creating tracking msg')
-      debugLog(err)
-    }
-    
-    for (const arg in i.data.options){
-      let a = i.data.options[arg]
-      switch (a.name){
-        case('prompt'):job.prompt=a.value;break
-        case('negative'):job.prompt=job.prompt+'['+a.value+']';break
-        case('attachment'):break
-        default:job[a.name]=a.value;break
+    execute: async(i) => {
+      let img,imgurl
+      let userid=i.member?.id??i.user?.id
+      let username=i.member?.username??i.user?.username
+      if (i.data.resolved && i.data.resolved.attachments && i.data.resolved.attachments.find(a=>a.contentType.startsWith('image/'))){
+        let attachmentOrig=i.data.resolved.attachments.find(a=>a.contentType.startsWith('image/'))
+        imgurl = attachmentOrig.url
+        img = await urlToBuffer(imgurl)
       }
-    }
-    if(img){job.initimg=img}
-    job = await invoke.validateJob(job)
-    job.creator=await getCreatorInfoFromInteraction(i)
-    if(job.error){return job}
-
-    // Calculate the cost of the generation based on the job parameters
-    let cost = calculateCost(job);
-
-    // Check the user's balance
-    const [databaseUser, isCreated] = await fetchUserByDiscord(username, userid);
-    const userBalance = databaseUser.credits;
-
-    if (userBalance < cost) {
-      // User doesn't have enough credits
-      await i.createMessage({content: `:warning: Insufficient credits. You need ${cost} credits for this generation. Your current balance is ${userBalance}. Please use /recharge to add more credits.`});
-      return;
-    }
-
-    // User has enough credits, proceed with the generation
-    let dreamresult = await invoke.cast(job);
-
-    if(dreamresult.error) {
-      // Generation failed, don't deduct credits
-      i.createMessage({content: `:warning: ${dreamresult.error}`});
-      return;
-    }
-
-    if(imgurl && !dreamresult.error && dreamresult.images?.length > 0){dreamresult.images[0].buffer = await exif.modify(dreamresult.images[0].buffer,'arty','inputImageUrl',imgurl)}
-    let fakemsg = {member:{id:userid}}
-    let result = await returnMessageResult(fakemsg,dreamresult)
-    let messages = result?.messages
-    let files = result?.files
-    let error = result?.error
-    if(error){
-      log('Error: '.bgRed+' '+error)
-      i.createMessage({content:':warning: '+error})
-      return
-    }
-
-    // Generation successful, deduct the cost from the user's balance
-    databaseUser.credits = userBalance - cost;
-    await databaseUser.save();
-
-    messages.forEach(message=>{
-      debugLog(message)
-      if(files.length>0)file=files.shift() // grab the top file
-      if(message&&file){
-        i.createMessage(message,file) // Send message with attachment
-      }else if(message){
-        i.createMessage(message) // Send message, no attachment
+      log(username+' triggered dream command')
+      let job={}
+      try {
+        let trackingmsg = await i.createMessage({content:':saluting_face: dreaming '+timestamp()})
+        job.tracking = {type:'discord',msg:trackingmsg}
+      } catch (err) {
+        debugLog('Error creating tracking msg')
+        debugLog(err)
       }
-    })
-  }
+      
+      for (const arg in i.data.options){
+        let a = i.data.options[arg]
+        switch (a.name){
+          case('prompt'):job.prompt=a.value;break
+          case('negative'):job.prompt=job.prompt+'['+a.value+']';break
+          case('attachment'):break
+          default:job[a.name]=a.value;break
+        }
+      }
+      if(img){job.initimg=img}
+      job = await invoke.validateJob(job)
+      job.creator=await getCreatorInfoFromInteraction(i)
+      job = await auth.userAllowedJob(job)
+      if(job.error){
+          log('Error: '.bgRed+' '+error)
+          i.createMessage({content:':warning: '+job.error})
+          return
+      }
+      let dreamresult = await invoke.cast(job)
+      if(imgurl && !dreamresult.error && dreamresult.images?.length > 0){dreamresult.images[0].buffer = await exif.modify(dreamresult.images[0].buffer,'arty','inputImageUrl',imgurl)}
+      let fakemsg = {member:{id:userid},fake:true}
+      let result = await returnMessageResult(fakemsg,dreamresult)
+      let messages = result?.messages
+      let files = result?.files
+      let error = result?.error
+      if(error){
+          log('Error: '.bgRed+' '+error)
+          i.createMessage({content:':warning: '+error})
+          return
+      }
+      messages.forEach(message=>{
+        debugLog(message)
+        if(files.length>0)file=files.shift() // grab the top file
+        if(message&&file){
+          i.createMessage(message,file) // Send message with attachment
+        }else if(message){
+          i.createMessage(message) // Send message, no attachment
+        }
+      })
+    }
 },
   {
     name: 'background',
