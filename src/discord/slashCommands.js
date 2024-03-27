@@ -9,6 +9,7 @@ const Eris = require("eris")
 const Collection = Eris.Collection
 const {fonturls} = require('../fonturls')
 const paymentService = require('../payment/paymentService')
+const { credits: { balance, decrement }, calculateCost } = require('../credits.js');
 // Get samplers from config ready for /dream slash command
 var samplers=config.schedulers||['euler','deis','ddim','ddpm','dpmpp_2s','dpmpp_2m','dpmpp_2m_sde','dpmpp_sde','heun','kdpm_2','lms','pndm','unipc','euler_k','dpmpp_2s_k','dpmpp_2m_k','dpmpp_2m_sde_k','dpmpp_sde_k','heun_k','lms_k','euler_a','kdpm_2_a','lcm']
 var samplersSlash=[]
@@ -46,62 +47,85 @@ var slashCommands = [
       {type: 3, name: 'control', description: 'controlnet mode to use with attachment', required: false, min_length: 3, max_length:40},
     ],
     cooldown: 500,
-    execute: async(i) => {
-      let img,imgurl
-      let userid=i.member?.id??i.user?.id
-      let username=i.member?.username??i.user?.username
-      if (i.data.resolved && i.data.resolved.attachments && i.data.resolved.attachments.find(a=>a.contentType.startsWith('image/'))){
-        let attachmentOrig=i.data.resolved.attachments.find(a=>a.contentType.startsWith('image/'))
-        imgurl = attachmentOrig.url
-        img = await urlToBuffer(imgurl)
-      }
-      log(username+' triggered dream command')
-      let job={}
-      try {
-        let trackingmsg = await i.createMessage({content:':saluting_face: dreaming '+timestamp()})
-        job.tracking = {type:'discord',msg:trackingmsg}
-      } catch (err) {
-        debugLog('Error creating tracking msg')
-        debugLog(err)
-      }
-      
-      for (const arg in i.data.options){
-        let a = i.data.options[arg]
-        switch (a.name){
-          case('prompt'):job.prompt=a.value;break
-          case('negative'):job.prompt=job.prompt+'['+a.value+']';break
-          case('attachment'):break
-          default:job[a.name]=a.value;break
-        }
-      }
-      if(img){job.initimg=img}
-      job = await invoke.validateJob(job)
-      job.creator=await getCreatorInfoFromInteraction(i)
-      job = await messageCommands.checkUserForJob(job)
-      if(job.error){return job}
-      let dreamresult = await invoke.cast(job)
-      if(imgurl && !dreamresult.error && dreamresult.images?.length > 0){dreamresult.images[0].buffer = await exif.modify(dreamresult.images[0].buffer,'arty','inputImageUrl',imgurl)}
-      let fakemsg = {member:{id:userid}}
-      let result = await returnMessageResult(fakemsg,dreamresult)
-      let messages = result?.messages
-      let files = result?.files
-      let error = result?.error
-      if(error){
-          log('Error: '.bgRed+' '+error)
-          i.createMessage({content:':warning: '+error})
-          return
-      }
-      messages.forEach(message=>{
-        debugLog(message)
-        if(files.length>0)file=files.shift() // grab the top file
-        if(message&&file){
-          i.createMessage(message,file) // Send message with attachment
-        }else if(message){
-          i.createMessage(message) // Send message, no attachment
-        }
-      })
+  execute: async(i) => {
+    let img,imgurl
+    let userid=i.member?.id??i.user?.id
+    let username=i.member?.username??i.user?.username
+    if (i.data.resolved && i.data.resolved.attachments && i.data.resolved.attachments.find(a=>a.contentType.startsWith('image/'))){
+      let attachmentOrig=i.data.resolved.attachments.find(a=>a.contentType.startsWith('image/'))
+      imgurl = attachmentOrig.url
+      img = await urlToBuffer(imgurl)
     }
-  },
+    log(username+' triggered dream command')
+    let job={}
+    try {
+      let trackingmsg = await i.createMessage({content:':saluting_face: dreaming '+timestamp()})
+      job.tracking = {type:'discord',msg:trackingmsg}
+    } catch (err) {
+      debugLog('Error creating tracking msg')
+      debugLog(err)
+    }
+    
+    for (const arg in i.data.options){
+      let a = i.data.options[arg]
+      switch (a.name){
+        case('prompt'):job.prompt=a.value;break
+        case('negative'):job.prompt=job.prompt+'['+a.value+']';break
+        case('attachment'):break
+        default:job[a.name]=a.value;break
+      }
+    }
+    if(img){job.initimg=img}
+    job = await invoke.validateJob(job)
+    job.creator=await getCreatorInfoFromInteraction(i)
+    if(job.error){return job}
+
+    // Calculate the cost of the generation based on the job parameters
+    let cost = calculateCost(job);
+
+    // Check the user's balance
+    let userBalance = await balance(userid);
+
+    if (userBalance < cost) {
+      // User doesn't have enough credits
+      i.createMessage({content: `:warning: Insufficient credits. You need ${cost} credits for this generation. Your current balance is ${userBalance}. Please use /recharge to add more credits.`});
+      return;
+    }
+
+    // User has enough credits, proceed with the generation
+    let dreamresult = await invoke.cast(job);
+
+    if(dreamresult.error) {
+      // Generation failed, don't deduct credits
+      i.createMessage({content: `:warning: ${dreamresult.error}`});
+      return;
+    }
+
+    // Generation successful, deduct the cost from the user's balance
+    await decrement(userid, cost);
+
+    if(imgurl && !dreamresult.error && dreamresult.images?.length > 0){dreamresult.images[0].buffer = await exif.modify(dreamresult.images[0].buffer,'arty','inputImageUrl',imgurl)}
+    let fakemsg = {member:{id:userid}}
+    let result = await returnMessageResult(fakemsg,dreamresult)
+    let messages = result?.messages
+    let files = result?.files
+    let error = result?.error
+    if(error){
+      log('Error: '.bgRed+' '+error)
+      i.createMessage({content:':warning: '+error})
+      return
+    }
+    messages.forEach(message=>{
+      debugLog(message)
+      if(files.length>0)file=files.shift() // grab the top file
+      if(message&&file){
+        i.createMessage(message,file) // Send message with attachment
+      }else if(message){
+        i.createMessage(message) // Send message, no attachment
+      }
+    })
+  }
+},
   {
     name: 'background',
     description:'Remove the background from an image',
@@ -347,7 +371,8 @@ if(config.credits.enabled)
     description: 'Recharge your render credits with Hive, HBD or Bitcoin over lightning network',
     cooldown: 500,
     execute: async (i) => {
-      await paymentService.discordRechargePrompt(i);
+      const paymentLink = await paymentService.discordRechargePrompt(i);
+      await i.createMessage(`Click on this link to recharge your credits: ${paymentLink}`);
     }
   })
   slashCommands.push({
