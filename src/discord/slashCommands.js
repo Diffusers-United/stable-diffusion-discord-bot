@@ -84,10 +84,12 @@ var slashCommands = [
       job = await invoke.validateJob(job)
       job.creator=await getCreatorInfoFromInteraction(i)
       job = await auth.userAllowedJob(job, invoke.getJobCost(job))
+      console.log("Job after UserAllowed", job);
       if(job.error){
           const error = job.error;
-          log('Error: '.bgRed+' '+error)
-          i.createMessage({content:':warning: '+job.error})
+          log('Error: '.bgRed+' '+error);
+          console.log("job.error after UserAllowedJob");
+          await i.createMessage({content:':warning: '+job.error});
           return
       }
       let dreamresult = await invoke.cast(job)
