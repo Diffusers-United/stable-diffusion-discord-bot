@@ -70,7 +70,7 @@ const initHost=async(host)=>{
         }
         host.lastInit = now
         queueStatus(host) // connect, prune old jobs from queue
-        if(host.socket.connected===false){subscribeQueue(host,'arty')}
+        if(host.socket.connected===false){subscribeQueue(host,host.name)}
     } catch (err) {
         if(host.online===true||!host.lastFail){
             log('Failed to init host '.bgRed.black+host.name.bgRed+' : '+err.code)
@@ -287,7 +287,7 @@ buildGraphFromJob = async(job)=>{ // Build new nodes graph based on job details
     }
     // insert job metadata into string, pipe to metadata_item, pipe to metadata , pipe to collect alongside core_metadata output, into merge_metadata as final meta output
     node('string',{value:buildWorkflowFromJob(job)},[])
-    node('metadata_item',{label:'arty'},[pipe(lastid.string,'value','SELF','value')])
+    node('metadata_item',{label:job.host.name},[pipe(lastid.string,'value','SELF','value')])
     node('metadata',{},[pipe(lastid.metadata_item,'item','SELF','items')]) // fails with no error when uncommented
     node('core_metadata',metaObject,[])
     node('collect',{},[pipe(lastid.metadata,'metadata','SELF','item'),pipe(lastid.core_metadata,'metadata','SELF','item')])
@@ -405,7 +405,7 @@ const enqueueBatch = async (host, graph, name='arty') => {
 
 const batchStatus = async (host,batch_id,name='arty')=>{
     try {
-        const response = await axios.get(host.url + '/api/v1/queue/'+name+'/b/'+batch_id+'/status')
+        const response = await axios.get(host.url + '/api/v1/queue/'+host.name+'/b/'+batch_id+'/status')
         return response.data
     } catch (err) {
         log(err)
@@ -415,7 +415,7 @@ const batchStatus = async (host,batch_id,name='arty')=>{
 
 const queueStatus = async (host,name='arty')=>{
     try {
-        const response = await axios.get(host.url + '/api/v1/queue/'+name+'/status')
+        const response = await axios.get(host.url + '/api/v1/queue/'+host.name+'/status')
         if(response.data.queue.pending===0&&response.data.queue.in_progress===0&&response.data.queue.total>10){queuePrune(host,name)}
         return response.data
     } catch (err) {
@@ -426,7 +426,7 @@ const queueStatus = async (host,name='arty')=>{
 
 const queueList = async (host,name='arty')=>{
     try {
-        const response = await axios.get(host.url + '/api/v1/queue/'+name+'/list')
+        const response = await axios.get(host.url + '/api/v1/queue/'+host.name+'/list')
         return response.data
     } catch (err) {
         log(err)
@@ -436,7 +436,7 @@ const queueList = async (host,name='arty')=>{
 
 const queuePrune = async (host,name='arty')=>{
     try {
-        const response = await axios.put(host.url + '/api/v1/queue/'+name+'/prune')
+        const response = await axios.put(host.url + '/api/v1/queue/'+host.name+'/prune')
         log('Pruning queue "'+name+'" on host '+host.name+'; deleted '+response.data?.deleted+' completed or failed jobs.')
         return response.data
     } catch (err) {
@@ -458,7 +458,7 @@ const cancelBatch = async(batchid,host=null,name='arty')=>{
                 return
             }
         }
-        const response = await axios.put(host.url+'/api/v1/queue/'+name+'/cancel_by_batch_ids',{batch_ids:[batchid]})
+        const response = await axios.put(host.url+'/api/v1/queue/'+host.name+'/cancel_by_batch_ids',{batch_ids:[batchid]})
         if(response.status===200){
             log('Batch cancelled')
             resultCache.edit(batchid,'status','cancelled')
@@ -519,6 +519,7 @@ const findHost = async(job=null)=>{
 const subscribeQueue = async(host,name='arty')=>{
     let socket = host.socket
     console.log("Whats inside of a host", host)
+    name = host.name;
     try{
         socket.on('connect',()=>{
             socket.emit('subscribe_queue',{"queue_id":name})
