@@ -601,7 +601,11 @@ batchToResult = async(host,batchid)=>{
             debugLog(job)
             return job.results
         }
-        if(job?.status==='failed'){err=true;return {error:'Job failed'}}
+        if(job?.status==='failed'){
+            err=true;
+            console.log('batchToResult FAILED', job);
+            return {error:'Job failed'}
+        }
         await sleep(1000)
     }
 }
@@ -616,7 +620,12 @@ batchToImages = async(host,batchid)=>{
             images = await getBatchImages(host,batchid)
             return images
         }
-        if(job?.status==='failed'){err=true;return {error:'Job failed'}}
+        
+        if(job?.status==='failed'){
+            err=true;
+            console.log('batchToImages  FAILED', job);
+            return {error:'Job failed'}
+        }
         await sleep(1000)
     }
 }
