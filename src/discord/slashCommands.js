@@ -8,6 +8,7 @@ const {llm}=require('../plugins/llm/llm')
 const Eris = require("eris")
 const Collection = Eris.Collection
 const {fonturls} = require('../fonturls')
+const paymentService = require('../payment/paymentService')
 // Get samplers from config ready for /dream slash command
 var samplers=config.schedulers||['euler','deis','ddim','ddpm','dpmpp_2s','dpmpp_2m','dpmpp_2m_sde','dpmpp_sde','heun','kdpm_2','lms','pndm','unipc','euler_k','dpmpp_2s_k','dpmpp_2m_k','dpmpp_2m_sde_k','dpmpp_sde_k','heun_k','lms_k','euler_a','kdpm_2_a','lcm']
 var samplersSlash=[]
@@ -337,7 +338,7 @@ var slashCommands = [
   }*/
 
 // If credits are active, add /recharge and /balance otherwise don't include them
-/*
+
 if(config.credits.enabled)
 {
 
@@ -345,15 +346,20 @@ if(config.credits.enabled)
     name: 'recharge',
     description: 'Recharge your render credits with Hive, HBD or Bitcoin over lightning network',
     cooldown: 500,
-    execute: (i) => {if (i.member) {rechargePrompt(i.member.id,i.channel.id)} else if (i.user){rechargePrompt(i.user.id,i.channel.id)}}
+    execute: async (i) => {
+      await paymentService.discordRechargePrompt(i);
+    }
   })
   slashCommands.push({
     name: 'balance',
     description: 'Check your credit balance',
     cooldown: 500,
-    execute: (i) => {var userid=i.member?i.member.id:i.user.id;balancePrompt(userid,i.channel.id)}
+    execute: async (i) => {
+      const balance = await paymentService.discordBalancePrompt(i);
+      await i.createMessage(`You have ${balance} credits.`);
+    }
   })
-}*/
+}
 
 // if llm is enabled in config, add its /chat slash command to the mix
 if(config.llm?.enabled){

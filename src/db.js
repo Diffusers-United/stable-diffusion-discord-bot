@@ -112,6 +112,9 @@ const Payment = db.define('Payment',{
         primaryKey:true,
         autoIncrement:true
     },
+    user_id: {
+        type: DataTypes.INTEGER
+    },
     type:{
         type: DataTypes.STRING
     },

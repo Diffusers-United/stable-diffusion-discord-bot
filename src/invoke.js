@@ -387,7 +387,6 @@ const getJobCost = (job) =>{
     if(job.hrf&&job.hrfwidth&&job.hrfheight&&job.strength){
         cost=cost*(job.hrfwidth*job.hrfheight*(steps*job.strength))/pixelStepsBase // account for 2 pass hiresfix
     }
-    if(job.model.base_model==='sdxl'){cost=cost+0.45} // increased vram use, load time (higher base res already included earlier)
     if(job.loras&&job.loras.length>0){cost=cost+(job.loras.length*0.25)} // 0.25 for each lora
     // todo charge for loras, ipa, controlnet
     return parseFloat(cost.toFixed(2))
