@@ -1,6 +1,6 @@
 const {config,log,debugLog,getUUID,validUUID,urlToBuffer,sleep,shuffle,tidyNumber}=require('./utils.js')
 
-let resultCache=[]
+let resultCache={}
 
 const get = (id=null)=>{
     if(id){
