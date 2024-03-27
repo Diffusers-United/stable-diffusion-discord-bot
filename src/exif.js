@@ -8,7 +8,6 @@ const pngtext = require('png-chunk-text')
 
 
 load=async(buf)=>{
-    return;
     //buf = await modify(buf,'arty_meta','keyname','value'))
     exif = ExifReader.load(buf)
     let width = exif['Image Width'].value
@@ -16,7 +15,7 @@ load=async(buf)=>{
     let results = {}
     // todo move this to invoke module after polish
     if(exif.invokeai_metadata){ //&&exif.invokeai_graph
-        let meta=null
+        let meta={arty:'{}'};
         try {
             meta=JSON.parse(exif.invokeai_metadata.value)
         } catch(err){
