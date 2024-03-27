@@ -93,7 +93,7 @@ var slashCommands = [
 
     if (userBalance < cost) {
       // User doesn't have enough credits
-      i.createMessage({content: `:warning: Insufficient credits. You need ${cost} credits for this generation. Your current balance is ${userBalance}. Please use /recharge to add more credits.`});
+      await i.createMessage({content: `:warning: Insufficient credits. You need ${cost} credits for this generation. Your current balance is ${userBalance}. Please use /recharge to add more credits.`});
       return;
     }
 
