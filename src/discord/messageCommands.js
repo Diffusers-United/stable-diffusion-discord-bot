@@ -1284,10 +1284,15 @@ imageResultMessage = async(userid,img,result,meta)=>{
     if(meta.invoke?.seamlessx===true){t+='x '}
     if(meta.invoke?.seamlessy===true){t+='y '}
     let colordec=getRandomColorDec()
-    let content = ':brain: <@'+userid+'>'
-    if(config.credits?.enabled&&cost){
-        let balance = await credits.balance(meta.invoke.creator)
-        content+=' :coin: '+balance+'(-'+cost+')'
+    let content = ':brain: <@' + userid + '>';
+    if (config.credits?.enabled && cost) {
+    try {
+        const userBalance = await credits.balance(userid);
+        content += ' :coin: ' + userBalance + '(-' + cost + ')';
+    } catch (err) {
+        console.error('Error retrieving user balance:', err);
+        // Handle the error appropriately
+    }
     }
     let newmsg = {
         content:content,

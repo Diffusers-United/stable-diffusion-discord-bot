@@ -2,78 +2,130 @@
 const {log,debugLog,sleep, getUUID, getRandomColorDec}=require('../utils.js')
 const {resultCache}=require('../resultCache')
 
-update = async(msg,batchid)=>{
-    // Call once, repetitively update message with results of get(batchid)
-    let error=false,done=false,statusmsg=null,cached=null,result=null,interval=500,fails=0
-    while(!error&&!done){
-        try {
-            await sleep(interval)
-            result = resultCache.get(batchid)
-            statusmsg = returnProgressMessage(batchid)
-            if(!statusmsg){
-                fails++
-                if(fails>3){await msg.delete();return}
-                continue
-            }
-            if(statusmsg&&statusmsg!==cached){
-                cached=statusmsg // update cache
-                await msg.edit(statusmsg.msg,statusmsg.file) // edit progress message
-            }
-            if(['completed','failed','cancelled'].includes(result.status)){
-                await msg.delete()
-                return
-            }
-        } catch (err) {
-            debugLog(err)
-            error=true
-        }
-    }
-}
-
-returnProgressMessage = (batchid) =>{
-    // Return a formatted discord message tracking progress for a specific batchid
-    let err = false
+update = async (msg, batchid) => {
+  // Call once, repetitively update message with results of get(batchid)
+  let error = false,
+    done = false,
+    statusmsg = null,
+    cached = null,
+    result = null,
+    interval = 500,
+    fails = 0;
+  while (!error && !done) {
     try {
-        console.log("BatchID ", batchid);
-        let r = resultCache.get(batchid)
-        let content= ''//+batchid
-        file=null
-        filename=null
-        if(r){
-            switch(r.status){
-                case('in_progress'):content=':green_circle: In progress';break
-                case('pending'):content=':orange_circle: Pending';break
-                case('failed'):content=':red_circle: Failed';break
-                case('completed'):content=':tada: Completed';break
-            }
-            content+=' '
-            if(r.hostname){content+=' on `'+r.hostname+'`'}
-            content+='\n'
-            if(['in_progress'].includes(r.status)&&r.progress?.step!==undefined){
-                let percent = (parseInt(r.progress?.step) / parseInt(r.progress?.total_steps))*100
-                content+=emoji(percent/100)+' '+r.progress?.step+' / '+r.progress?.total_steps+' ('+percent.toFixed(0)+'%) '
-            } else if(r.results.length>0 && r.results[r.results.length-1].type) {
-                content = content + ':floppy_disk: ' + r.results[r.results.length-1].type + '\n'
-            }
-            // Cannot edit attachments on an existing message
-            /// Can edit image urls if we have public url
-            if(r.progress?.progress_image){
-                debugLog('progress image')
-                debugLog(r.progress.progress_image)
-                filename='preview-'+getUUID()+'.png'
-                file=[{file:r.progress.progress_image,name:filename}]
-            }
-        let components = [{type:1,components:[{type:2,style:4,label:'Cancel',custom_id:'cancelBatch-'+batchid,emoji:{name:'🗑️',id:null},disabled:false}]}]
-        let msg = {embeds: [{description:content}],components:components}
-        if(file){
-            msg.embeds[0].thumbnail={url:'attachment://'+filename}
-            return {msg,file}
-        } else {return {msg:msg}}
-        } else {return null}
-    } catch (err) {throw(err)}
+      await sleep(interval);
+      result = resultCache.get(batchid);
+      statusmsg = returnProgressMessage(batchid);
+      if (!statusmsg) {
+        fails++;
+        if (fails > 3) {
+          await msg.delete();
+          return;
+        }
+        continue;
+      }
+      if (!msg) {
+        msg = await channel.createMessage(statusmsg.msg, statusmsg.attachment);
+      } else  if (statusmsg && statusmsg !== cached) {
+        cached = statusmsg; // update cache
+        let messageContent = statusmsg.content;
+        if (statusmsg.imageUrl) {
+          messageContent += `\n${statusmsg.imageUrl}`;
+        }
+        if (!msg) {
+          msg = await channel.createMessage(messageContent, statusmsg.components);
+        } else {
+          await msg.edit(messageContent, statusmsg.components);
+        }
+      }
+      if (['completed', 'failed', 'cancelled'].includes(result.status)) {
+        await msg.delete();
+        return;
+      }
+    } catch (err) {
+      debugLog(err);
+      error = true;
+    }
+  }
+};
+
+const { createCanvas } = require('canvas');
+
+function createBlackImage() {
+  const width = 400;
+  const height = 400;
+  const canvas = createCanvas(width, height);
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = 'black';
+  ctx.fillRect(0, 0, width, height);
+  return canvas.toBuffer();
 }
 
-
+returnProgressMessage = (batchid) => {
+  // Return a formatted discord message tracking progress for a specific batchid
+  let err = false;
+  try {
+    console.log("BatchID ", batchid);
+    let r = resultCache.get(batchid);
+    let content = '';
+    let imageUrl = '';
+    if (r) {
+      switch (r.status) {
+        case 'in_progress':
+          content = ':green_circle: In progress';
+          break;
+        case 'pending':
+          content = ':orange_circle: Pending';
+          break;
+        case 'failed':
+          content = ':red_circle: Failed';
+          break;
+        case 'completed':
+          content = ':tada: Completed';
+          break;
+      }
+      content += ' ';
+      if (r.hostname) {
+        content += ' on `' + r.hostname + '`';
+      }
+      content += '\n';
+      if (['in_progress'].includes(r.status) && r.progress?.step !== undefined) {
+        let percent = (parseInt(r.progress?.step) / parseInt(r.progress?.total_steps)) * 100;
+        content += emoji(percent / 100) + ' ' + r.progress?.step + ' / ' + r.progress?.total_steps + ' (' + percent.toFixed(0) + '%) ';
+      } else if (r.results.length > 0 && r.results[r.results.length - 1].type) {
+        content = content + ':floppy_disk: ' + r.results[r.results.length - 1].type + '\n';
+      }
+      let components = [{
+        type: 1,
+        components: [{
+          type: 2,
+          style: 4,
+          label: 'Cancel',
+          custom_id: 'cancelBatch-' + batchid,
+          emoji: {
+            name: '🗑️',
+            id: null
+          },
+          disabled: false
+        }]
+      }];
+      if (r.progress?.progress_image_url) {
+        debugLog('progress image URL');
+        debugLog(r.progress.progress_image_url);
+        imageUrl = r.progress.progress_image_url;
+      }
+      return {
+        content: content,
+        components: components,
+        imageUrl: imageUrl
+      };
+    } else {
+      return null;
+    }
+  } catch (err) {
+    throw (err);
+  }
+};
 emoji = (percent,emojis=null)=>{
     if(percent===undefined||percent>100||percent===NaN) return ''
     emojiLibrary=[
