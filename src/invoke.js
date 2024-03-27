@@ -491,38 +491,70 @@ function findHostsWithJobLoras(hosts, job) {
     })
 }
 
-const findHost = async(job=null)=>{
+const findHost = async (job = null) => {
     // find host with the required models, embeds, etc that isn't currently busy
-    let availableHosts=cluster.filter(h=>{return h.online&&!h.disabled})
-    if(job===null&&availableHosts.length>0){
-        debugLog('No job info supplied, returning random available host')
-        return availableHosts[Math.floor(Math.random() * availableHosts.length)]
+    let availableHosts = cluster.filter(h => {
+      return h.online && !h.disabled;
+    });
+  
+    if (job === null && availableHosts.length > 0) {
+      debugLog('No job info supplied, returning random available host');
+      return availableHosts[Math.floor(Math.random() * availableHosts.length)];
     }
-    if(isString(job?.model)){
-        try{job.model=await modelnameToObject(job.model)
-        }catch(err){throw(err)}
+  
+    if (isString(job?.model)) {
+      try {
+        job.model = await modelnameToObject(job.model);
+      } catch (err) {
+        throw err;
+      }
     }
-    // filter available hosts : check correct model is installed
-    let filteredHosts = availableHosts.filter(host => {return host.models.some(model => model.name === job.model.name)})
-    //debugLog(filteredHosts)
-    // todo more host qualifications if needed for job (controlnets,ipa etc)
-    if(filteredHosts.length===0){throw('No host with required model found')}
+  
+    // filter available hosts: check correct model is installed
+    let filteredHosts = availableHosts.filter(host => {
+      return host.models.some(model => model.name === job.model.name);
+    });
+  
+    // todo more host qualifications if needed for job (controlnets, ipa, etc.)
+    if (filteredHosts.length === 0) {
+      throw 'No host with required model found';
+    }
+  
     // filter for hosts with the required loras
-    if(job.loras.length>0){
-        filteredHosts = findHostsWithJobLoras(filteredHosts,job)
-        if(filteredHosts.length===0){throw('No host with required loras found')}
+    if (job.loras.length > 0) {
+      filteredHosts = findHostsWithJobLoras(filteredHosts, job);
+      if (filteredHosts.length === 0) {
+        throw 'No host with required loras found';
+      }
     }
+  
     // get qualified hosts that are idle right now (if any, based on result cache)
-    let rc = resultCache.get()
-    let filteredHostsIdle = filteredHosts.filter(h=>{return !rc.some(job=>job.hostname===h.name)})
+    let rc = resultCache.get();
+    let filteredHostsIdle = filteredHosts.filter(h => {
+      return ![...rc.values()].some(job => job.hostname === h.name);
+    });
+  
     // return a random idle qualified host if available
-    if(filteredHostsIdle.length>0){return filteredHostsIdle[Math.floor(Math.random() * filteredHostsIdle.length)]}
+    if (filteredHostsIdle.length > 0) {
+      return filteredHostsIdle[Math.floor(Math.random() * filteredHostsIdle.length)];
+    }
+  
     // otherwise, find the least busy host
-    let hostCounts = {}
-    rc.forEach(job=>{if(hostCounts[job.hostname]===undefined){hostCounts[job.hostname] = 1}else{hostCounts[job.hostname]++}})
-    let sortedHosts = Object.keys(hostCounts).sort((a,b)=>{return hostCounts[a] - hostCounts[b]})
-    return sortedHosts[0]
-}
+    let hostCounts = {};
+    [...rc.values()].forEach(job => {
+      if (hostCounts[job.hostname] === undefined) {
+        hostCounts[job.hostname] = 1;
+      } else {
+        hostCounts[job.hostname]++;
+      }
+    });
+  
+    let sortedHosts = Object.keys(hostCounts).sort((a, b) => {
+      return hostCounts[a] - hostCounts[b];
+    });
+  
+    return sortedHosts[0];
+  };
 
 const subscribeQueue = async(host,name='arty')=>{
     // console.log("Host subscribeQueue", host);
