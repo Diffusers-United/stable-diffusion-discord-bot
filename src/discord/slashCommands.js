@@ -101,6 +101,17 @@ var slashCommands = [
           i.createMessage({content:':warning: '+error})
           return
       }
+
+      // Calculate the cost of the generation based on the job parameters
+      let cost = calculateCost(job);
+      // Check the user's balance
+      const [databaseUser, isCreated] = await fetchUserByDiscord(username, userid);
+      const userBalance = databaseUser.credits;
+      // Generation successful, deduct the cost from the user's balance
+      databaseUser.credits = userBalance - cost;
+      await databaseUser.save();
+      // ------------------------------------------------------------------
+
       messages.forEach(message=>{
         debugLog(message)
         if(files.length>0)file=files.shift() // grab the top file
