@@ -395,7 +395,7 @@ const getJobCost = (job) =>{
 const enqueueBatch = async (host, graph, name='arty') => {
     // new in invoke 3.2.0rc1
     try {
-        const response = await axios.post(host.url + '/api/v1/queue/'+name+'/enqueue_batch',graph)
+        const response = await axios.post(host.url + '/api/v1/queue/'+host.name+'/enqueue_batch',graph)
         return response.data.batch.batch_id
     } catch (err) {
         console.error('Error queueing batch',err.data)
@@ -1434,17 +1434,17 @@ cast = async(job)=>{
         context.images = await batchToImages(context.host,context.batchId)
         resultCache.remove(context.batchId)
         if(context.images?.error){return {error:context.images?.error}}
-        // Charge user here
-        if(config.credits.enabled&&job.cost>0&&context.job.creator.discordid&&context.host.ownerid){
-            if(context.job.creator.discordid===context.host.ownerid){
-                // user rendering on own backend, no charge
-            } else {
-                // charge the creator, credit the backend provider
-                await credits.transfer(context.job.creator.discordid,context.host.ownerid,job.cost)
-            }
-        } else {
-            debugLog('No charge')
-        }
+        // // Charge user here
+        // if(config.credits.enabled&&job.cost>0&&context.job.creator.discordid&&context.host.ownerid){
+        //     if(context.job.creator.discordid===context.host.ownerid){
+        //         // user rendering on own backend, no charge
+        //     } else {
+        //         // charge the creator, credit the backend provider
+        //         await credits.transfer(context.job.creator.discordid,context.host.ownerid,job.cost)
+        //     }
+        // } else {
+        //     debugLog('No charge')
+        // }
         if(context.job.initimgObject)deleteImage(context.host,context.job.initimgObject.image_name) // remove uploaded image after use
         let result = {
             job:context.job,

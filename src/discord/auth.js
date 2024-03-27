@@ -67,7 +67,7 @@ userAllowedFeature=async(user,feature)=>{
     // if credits are disabled, bypass completely
     if(!config.credits.enabled){return true}
     debugLog('userAllowedFeature check for '+user.discordid+' feature '+feature)
-    let [usr,created] = await User.findOrCreate({where:{discordID: user.discordid},defaults:{username:user.username,credits:config.credits?.default??100}})
+    let [usr,created] = await User.findOrCreate({where:{discordID: String(user.discordid)},defaults:{username:user.username,credits:config.credits?.default??100}})
     if(!created&&!usr.username){usr.username=user.username}
     switch(feature) {
         case 'any':

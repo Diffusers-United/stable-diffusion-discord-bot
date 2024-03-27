@@ -6,10 +6,14 @@ const {exif}=require('../exif')
 const {auth}=require('./auth')
 const {llm}=require('../plugins/llm/llm')
 const Eris = require("eris")
+const stripeIntegration = require("../payment/stripeIntegration.js")
 const Collection = Eris.Collection
 const {fonturls} = require('../fonturls')
 const paymentService = require('../payment/paymentService')
 const { credits: { balance, decrement }, calculateCost } = require('../credits.js');
+const { discord } = require('./discord.js')
+const { User } = require('../db.js')
+const { fetchUserByDiscord } = require('../repository.js')
 // Get samplers from config ready for /dream slash command
 var samplers=config.schedulers||['euler','deis','ddim','ddpm','dpmpp_2s','dpmpp_2m','dpmpp_2m_sde','dpmpp_sde','heun','kdpm_2','lms','pndm','unipc','euler_k','dpmpp_2s_k','dpmpp_2m_k','dpmpp_2m_sde_k','dpmpp_sde_k','heun_k','lms_k','euler_a','kdpm_2_a','lcm']
 var samplersSlash=[]
@@ -84,7 +88,8 @@ var slashCommands = [
     let cost = calculateCost(job);
 
     // Check the user's balance
-    let userBalance = await balance(userid);
+    const [databaseUser, isCreated] = await fetchUserByDiscord(username, userid);
+    const userBalance = databaseUser.credits;
 
     if (userBalance < cost) {
       // User doesn't have enough credits
@@ -101,9 +106,6 @@ var slashCommands = [
       return;
     }
 
-    // Generation successful, deduct the cost from the user's balance
-    await decrement(userid, cost);
-
     if(imgurl && !dreamresult.error && dreamresult.images?.length > 0){dreamresult.images[0].buffer = await exif.modify(dreamresult.images[0].buffer,'arty','inputImageUrl',imgurl)}
     let fakemsg = {member:{id:userid}}
     let result = await returnMessageResult(fakemsg,dreamresult)
@@ -115,6 +117,11 @@ var slashCommands = [
       i.createMessage({content:':warning: '+error})
       return
     }
+
+    // Generation successful, deduct the cost from the user's balance
+    databaseUser.credits = userBalance - cost;
+    await databaseUser.save();
+
     messages.forEach(message=>{
       debugLog(message)
       if(files.length>0)file=files.shift() // grab the top file
@@ -370,11 +377,24 @@ if(config.credits.enabled)
     name: 'recharge',
     description: 'Recharge your render credits with Hive, HBD or Bitcoin over lightning network',
     cooldown: 500,
+    permissionLevel: 'all',
+    /**
+     * 
+     * @param {Eris.CommandInteraction} i 
+     */
     execute: async (i) => {
-      const paymentLink = await paymentService.discordRechargePrompt(i);
-      await i.createMessage(`Click on this link to recharge your credits: ${paymentLink}`);
+      await i.createMessage({
+        content: 'Click on the button below to get your payment link',
+        components: [{
+          type: 1,
+          components: [
+            {type:2,style:1,label:'Get Link',custom_id:'generateRechargeLink',disabled:false}
+          ]
+        }]
+      });
     }
   })
+
   slashCommands.push({
     name: 'balance',
     description: 'Check your credit balance',
@@ -382,6 +402,15 @@ if(config.credits.enabled)
     execute: async (i) => {
       const balance = await paymentService.discordBalancePrompt(i);
       await i.createMessage(`You have ${balance} credits.`);
+    }
+  })
+
+  slashCommands.push({
+    name: 'verify',
+    description: 'Runs the payment link verification job',
+    cooldown: 500,
+    execute: async (i) => {
+      await stripeIntegration.verifyPaymentLinksJob(discord);
     }
   })
 }

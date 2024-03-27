@@ -27,7 +27,7 @@ const User = db.define('User', {
         unique: true
     },
     discordID: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.STRING,
         allowNull: true,
         unique: true,
     },
@@ -122,8 +122,12 @@ const Payment = db.define('Payment',{
         type: DataTypes.DATE,
     },
     txid:{
-        type:DataTypes.STRING,
+        type: DataTypes.STRING,
         allowNull:true
+    },
+    confirmedAt:{
+        type: DataTypes.DATE,
+        allowNull: true
     }
 })
 

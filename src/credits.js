@@ -11,20 +11,20 @@
         let userid,username
         if(isObject(user)){userid=user.discordid;username=user.username}else{userid=user;username=null}
         debugLog('balance check for userid '+userid+' , username '+username)
-        let [usr,created] = await User.findOrCreate({where:{discordID: userid},defaults:{credits:defaultCredits,username:username}})
+        let [usr,created] = await User.findOrCreate({where:{discordID: String(userid)},defaults:{credits:defaultCredits,username:username}})
         if(created){debugLog('Created new account '+username+' '+userid)}
         return parseFloat((usr.credits).toFixed(2))
     }
 
     decrement=async(user,amount=1)=>{
-        let usr = await User.findOne({where:{discordID:user}})
+        let usr = await User.findOne({where:{discordID:String(user)}})
         await usr.decrement('credits',{by:amount})
         debugLog('Credit removed: -'+amount+' from '+user)
         return true
     }
 
     increment=async(user,amount=1)=>{
-        let usr = await User.findOne({where:{discordID:user}})
+        let usr = await User.findOne({where:{discordID:String(user)}})
         await usr.increment('credits',{by:amount})
         debugLog('Credit added: +'+amount+' to '+user)
         return true

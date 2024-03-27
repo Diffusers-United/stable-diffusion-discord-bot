@@ -4,8 +4,14 @@
 const {User}=require("./db")
 const {config}=require('./utils')
 
+/**
+ * 
+ * @param {*} discordUsername 
+ * @param {*} discordUserId 
+ * @returns {[User, boolean]}
+ */
 const fetchUserByDiscord = async (discordUsername, discordUserId) => {
-    return await User.findOrCreate({where:{discordID: discordUserId},defaults:{username:discordUsername,credits:config.credits?.default??100}})
+    return await User.findOrCreate({where:{discordID: String(discordUserId)},defaults:{username:discordUsername,credits:config.credits?.default??100}})
 }
 
 module.exports = {

@@ -8,6 +8,7 @@ const {random}=require('../random')
 const imageEdit = require('../imageEdit')
 const {aspectRatio}=require('./aspectRatio')
 const { intersection } = require('lodash')
+const paymentService = require('../payment/paymentService')
 
 let commands = [
     {
@@ -328,7 +329,7 @@ let commands = [
             interaction.createMessage(tweakmsg)
         }
     },
-{
+    {
     name: 'chooseModel',
     description: 'Select a model from a dialog and apply it to an image',
     permissionLevel: 'all',
@@ -682,6 +683,23 @@ let commands = [
                 log(interaction?.user?.id)
                 log(config.adminID)
             }
+        }
+    },
+    {
+        name: 'generateRechargeLink',
+        description: 'Recharge your render credits with Hive, HBD or Bitcoin over lightning network',
+        permissionLevel: ['all'],
+        aliases:['generateRechargeLink'],
+        /**
+         * 
+         * @param {Eris.CommandInteraction} i 
+         */
+        command: async (i) => {
+            const paymentLink = await paymentService.discordRechargePrompt(i);
+            await i.createMessage({
+                content: `Click on this link to recharge your credits: ${paymentLink}`,
+                flags: 64,
+            });
         }
     }
 ]
