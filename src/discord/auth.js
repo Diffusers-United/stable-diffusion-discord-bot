@@ -80,11 +80,12 @@ userAllowedFeature=async(user,feature)=>{
             return usr.tier >= 1
     }
 }
-userAllowedJob=async(job, jobCost)=>{
+userAllowedJob=async(job, user=null, jobCost=null)=>{
     if(job.error){return job}// is job errored already
 
-    const userBalance = job.creator.credits;
-
+    const userBalance = user.credits;
+    
+    console.log("userAllowedJob user ", user);
     console.log("userAllowedJob userBalance", userBalance, "B - JC < 0", (userBalance - jobCost) < 0, "jobCost", jobCost);
 
     if((userBalance - jobCost) < 0){

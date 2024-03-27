@@ -56,6 +56,7 @@ var slashCommands = [
       let img,imgurl
       let userid=i.member?.id??i.user?.id
       let username=i.member?.username??i.user?.username
+      const [databaseUser, isCreated] = await fetchUserByDiscord(username, userid);
       if (i.data.resolved && i.data.resolved.attachments && i.data.resolved.attachments.find(a=>a.contentType.startsWith('image/'))){
         let attachmentOrig=i.data.resolved.attachments.find(a=>a.contentType.startsWith('image/'))
         imgurl = attachmentOrig.url
@@ -83,7 +84,7 @@ var slashCommands = [
       if(img){job.initimg=img}
       job = await invoke.validateJob(job)
       job.creator=await getCreatorInfoFromInteraction(i)
-      job = await auth.userAllowedJob(job, invoke.getJobCost(job))
+      job = await auth.userAllowedJob(job, databaseUser, invoke.getJobCost(job));
       console.log("Job after UserAllowed", job);
       if(job.error){
           const error = job.error;
@@ -109,7 +110,6 @@ var slashCommands = [
       let cost = invoke.getJobCost(job);
       console.log("JOB COST", job, cost);
       // Check the user's balance
-      const [databaseUser, isCreated] = await fetchUserByDiscord(username, userid);
       const userBalance = databaseUser.credits;
       // Generation successful, deduct the cost from the user's balance
       databaseUser.credits = userBalance - cost;
