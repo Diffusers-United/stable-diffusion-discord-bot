@@ -72,10 +72,11 @@ userAllowedFeature=async(user,feature)=>{
     switch(feature) {
         case 'any':
         case 'sd-1':// always allow sd1
-            return true
-        case 'sd-2':// sd2 is members only
         case 'sdxl':// sdxl is members only
         case 'llm':// llm is members only
+            return true
+        case 'sd-2':// sd2 is members only
+      
             return usr.tier >= 1
     }
 }

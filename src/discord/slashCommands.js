@@ -14,6 +14,7 @@ const { credits: { balance, decrement }, calculateCost } = require('../credits.j
 const { discord } = require('./discord.js')
 const { User } = require('../db.js')
 const { fetchUserByDiscord } = require('../repository.js')
+const { constants } = require('crypto')
 // Get samplers from config ready for /dream slash command
 var samplers=config.schedulers||['euler','deis','ddim','ddpm','dpmpp_2s','dpmpp_2m','dpmpp_2m_sde','dpmpp_sde','heun','kdpm_2','lms','pndm','unipc','euler_k','dpmpp_2s_k','dpmpp_2m_k','dpmpp_2m_sde_k','dpmpp_sde_k','heun_k','lms_k','euler_a','kdpm_2_a','lcm']
 var samplersSlash=[]
@@ -79,10 +80,13 @@ var slashCommands = [
         default:job[a.name]=a.value;break
       }
     }
-    if(img){job.initimg=img}
-    job = await invoke.validateJob(job)
-    job.creator=await getCreatorInfoFromInteraction(i)
-    if(job.error){return job}
+    
+    if(job.error){
+      const error = job.error
+      log('Error: '.bgRed+' '+error)
+      i.createMessage({content:':warning: '+job.error})
+      return
+    }
 
     // Calculate the cost of the generation based on the job parameters
     let cost = calculateCost(job);
@@ -90,22 +94,25 @@ var slashCommands = [
     // Check the user's balance
     const [databaseUser, isCreated] = await fetchUserByDiscord(username, userid);
     const userBalance = databaseUser.credits;
-
+   
     if (userBalance < cost) {
       // User doesn't have enough credits
       await i.createMessage({content: `:warning: Insufficient credits. You need ${cost} credits for this generation. Your current balance is ${userBalance}. Please use /recharge to add more credits.`});
       return;
     }
-
+    
     // User has enough credits, proceed with the generation
     let dreamresult = await invoke.cast(job);
-
+    job.creator=await getCreatorInfoFromInteraction(i)
+    job = await auth.userAllowedJob(job)
+    
+    console.log('cat')
     if(dreamresult.error) {
       // Generation failed, don't deduct credits
-      i.createMessage({content: `:warning: ${dreamresult.error}`});
+      await i.createMessage({content: `:warning: ${dreamresult.error}`});
       return;
     }
-
+    
     if(imgurl && !dreamresult.error && dreamresult.images?.length > 0){dreamresult.images[0].buffer = await exif.modify(dreamresult.images[0].buffer,'arty','inputImageUrl',imgurl)}
     let fakemsg = {member:{id:userid}}
     let result = await returnMessageResult(fakemsg,dreamresult)
@@ -114,7 +121,7 @@ var slashCommands = [
     let error = result?.error
     if(error){
       log('Error: '.bgRed+' '+error)
-      i.createMessage({content:':warning: '+error})
+      await i.createMessage({content:':warning: '+error})
       return
     }
 
@@ -122,13 +129,13 @@ var slashCommands = [
     databaseUser.credits = userBalance - cost;
     await databaseUser.save();
 
-    messages.forEach(message=>{
+    messages.forEach(async message=>{
       debugLog(message)
       if(files.length>0)file=files.shift() // grab the top file
       if(message&&file){
-        i.createMessage(message,file) // Send message with attachment
+      await i.createMessage(message,file) // Send message with attachment
       }else if(message){
-        i.createMessage(message) // Send message, no attachment
+      await i.createMessage(message) // Send message, no attachment
       }
     })
   }
