@@ -393,6 +393,7 @@ const getJobCost = (job) =>{
 }
 
 const enqueueBatch = async (host, graph, name='arty') => {
+    console.log("Host enqueueBatch", host);
     // new in invoke 3.2.0rc1
     try {
         const response = await axios.post(host.url + '/api/v1/queue/'+host.name+'/enqueue_batch',graph)
@@ -404,6 +405,7 @@ const enqueueBatch = async (host, graph, name='arty') => {
 }
 
 const batchStatus = async (host,batch_id,name='arty')=>{
+    console.log("Host batchStatus", host);
     try {
         const response = await axios.get(host.url + '/api/v1/queue/'+host.name+'/b/'+batch_id+'/status')
         return response.data
@@ -414,6 +416,7 @@ const batchStatus = async (host,batch_id,name='arty')=>{
 }
 
 const queueStatus = async (host,name='arty')=>{
+    console.log("Host queueStatus", host);
     try {
         const response = await axios.get(host.url + '/api/v1/queue/'+host.name+'/status')
         if(response.data.queue.pending===0&&response.data.queue.in_progress===0&&response.data.queue.total>10){queuePrune(host,name)}
@@ -425,6 +428,7 @@ const queueStatus = async (host,name='arty')=>{
 }
 
 const queueList = async (host,name='arty')=>{
+    console.log("Host queueList", host);
     try {
         const response = await axios.get(host.url + '/api/v1/queue/'+host.name+'/list')
         return response.data
@@ -435,6 +439,7 @@ const queueList = async (host,name='arty')=>{
 }
 
 const queuePrune = async (host,name='arty')=>{
+    console.log("Host queuePrune", host);
     try {
         const response = await axios.put(host.url + '/api/v1/queue/'+host.name+'/prune')
         log('Pruning queue "'+name+'" on host '+host.name+'; deleted '+response.data?.deleted+' completed or failed jobs.')
@@ -446,6 +451,7 @@ const queuePrune = async (host,name='arty')=>{
 }
 
 const cancelBatch = async(batchid,host=null,name='arty')=>{
+    console.log("Host cancelBatch", host);
     log('cancelbatch started with batchid '+batchid)
     // if host not specified, discover from batchid
     try {
@@ -517,6 +523,7 @@ const findHost = async(job=null)=>{
 }
 
 const subscribeQueue = async(host,name='arty')=>{
+    console.log("Host subscribeQueue", host);
     let socket = host.socket
     console.log("Whats inside of a host", host)
     name = host.name;
