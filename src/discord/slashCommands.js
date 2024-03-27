@@ -95,7 +95,7 @@ var slashCommands = [
           const error = job.error;
           log('Error: '.bgRed+' '+error);
           console.log("job.error after UserAllowedJob");
-          await i.createMessage({content:`@<${userid}>` + ':warning: '+ job.error});
+          await i.createMessage({content:`<@${userid}>` + ':warning: '+ job.error});
           await i.deleteOriginalMessage();
           return
       }
