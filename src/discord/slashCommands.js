@@ -14,6 +14,7 @@ const { credits: { balance, decrement }, calculateCost } = require('../credits.j
 const { discord } = require('./discord.js')
 const { User } = require('../db.js')
 const { fetchUserByDiscord } = require('../repository.js')
+const { constants } = require('crypto')
 // Get samplers from config ready for /dream slash command
 var samplers=config.schedulers||['euler','deis','ddim','ddpm','dpmpp_2s','dpmpp_2m','dpmpp_2m_sde','dpmpp_sde','heun','kdpm_2','lms','pndm','unipc','euler_k','dpmpp_2s_k','dpmpp_2m_k','dpmpp_2m_sde_k','dpmpp_sde_k','heun_k','lms_k','euler_a','kdpm_2_a','lcm']
 var samplersSlash=[]
