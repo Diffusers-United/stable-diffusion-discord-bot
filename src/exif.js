@@ -15,7 +15,7 @@ load=async(buf)=>{
     let results = {}
     // todo move this to invoke module after polish
     if(exif.invokeai_metadata){ //&&exif.invokeai_graph
-        let meta={arty:'{}'};
+        let meta=null;
         try {
             meta=JSON.parse(exif.invokeai_metadata.value)
         } catch(err){

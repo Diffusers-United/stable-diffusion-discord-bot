@@ -288,7 +288,8 @@ buildGraphFromJob = async(job)=>{ // Build new nodes graph based on job details
     }
     // insert job metadata into string, pipe to metadata_item, pipe to metadata , pipe to collect alongside core_metadata output, into merge_metadata as final meta output
     node('string',{value:buildWorkflowFromJob(job)},[])
-    node('metadata_item',{label:'i hate you arty'},[pipe(lastid.string,'value','SELF','value')])
+    /** Someday I will put a bullet in all arties' heads. SOMEDAY */
+    node('metadata_item',{label:'arty'},[pipe(lastid.string,'value','SELF','value')])
     node('metadata',{},[pipe(lastid.metadata_item,'item','SELF','items')]) // fails with no error when uncommented
     node('core_metadata',metaObject,[])
     node('collect',{},[pipe(lastid.metadata,'metadata','SELF','item'),pipe(lastid.core_metadata,'metadata','SELF','item')])
