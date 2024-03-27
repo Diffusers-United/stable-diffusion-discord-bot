@@ -1494,6 +1494,7 @@ module.exports = {
         allUniqueT2iAdaptersAvailable,
         allUniqueLorasAvailable,
         processImage,
+        getJobCost,
         hostCount:getHostOnlineCount,
         jobStats:getJobStats,
         textFontImage,

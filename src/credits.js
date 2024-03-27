@@ -68,18 +68,6 @@
         }
     }
 
-    function calculateCost(job) {
-        // Implement your cost calculation logic based on the job parameters
-        // For example, you can consider factors like image dimensions, number of iterations, etc.
-        let baseCost = 10;
-        let widthCost = job.width ? Math.floor(job.width / 100) : 0;
-        let heightCost = job.height ? Math.floor(job.height / 100) : 0;
-        let iterationsCost = job.number ? job.number * 5 : 0;
-        
-        let totalCost = baseCost + widthCost + heightCost + iterationsCost;
-        return totalCost;
-    }
-
     // Add this line at the end of the credits.js file
 module.exports = {
     credits: {
@@ -90,5 +78,4 @@ module.exports = {
       transfer,
       memberRecharge
     },
-    calculateCost // Export the calculateCost function
   }

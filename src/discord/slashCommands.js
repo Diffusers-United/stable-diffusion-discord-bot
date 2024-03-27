@@ -10,7 +10,7 @@ const stripeIntegration = require("../payment/stripeIntegration.js")
 const Collection = Eris.Collection
 const {fonturls} = require('../fonturls')
 const paymentService = require('../payment/paymentService')
-const { credits: { balance, decrement }, calculateCost } = require('../credits.js');
+const { credits: { balance, decrement } } = require('../credits.js');
 const { discord } = require('./discord.js')
 const { User } = require('../db.js')
 const { fetchUserByDiscord } = require('../repository.js')
@@ -85,6 +85,7 @@ var slashCommands = [
       job.creator=await getCreatorInfoFromInteraction(i)
       job = await auth.userAllowedJob(job)
       if(job.error){
+          const error = job.error;
           log('Error: '.bgRed+' '+error)
           i.createMessage({content:':warning: '+job.error})
           return
@@ -103,7 +104,8 @@ var slashCommands = [
       }
 
       // Calculate the cost of the generation based on the job parameters
-      let cost = calculateCost(job);
+      let cost = invoke.getJobCost(job);
+      console.log("JOB COST", job, cost);
       // Check the user's balance
       const [databaseUser, isCreated] = await fetchUserByDiscord(username, userid);
       const userBalance = databaseUser.credits;
