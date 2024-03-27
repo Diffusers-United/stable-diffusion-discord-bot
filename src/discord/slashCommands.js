@@ -52,6 +52,11 @@ var slashCommands = [
       {type: 3, name: 'control', description: 'controlnet mode to use with attachment', required: false, min_length: 3, max_length:40},
     ],
     cooldown: 500,
+    /**
+     * 
+     * @param {Eris.CommandInteraction} i 
+     * @returns 
+     */
     execute: async(i) => {
       let img,imgurl
       let userid=i.member?.id??i.user?.id
@@ -90,7 +95,8 @@ var slashCommands = [
           const error = job.error;
           log('Error: '.bgRed+' '+error);
           console.log("job.error after UserAllowedJob");
-          await i.createMessage({content:':warning: '+job.error});
+          await i.createMessage({content:`@<${userid}>` + ':warning: '+ job.error});
+          await i.deleteOriginalMessage();
           return
       }
       let dreamresult = await invoke.cast(job)
