@@ -83,12 +83,15 @@ userAllowedFeature=async(user,feature)=>{
 userAllowedJob=async(job, user=null, jobCost=null)=>{
     if(job.error){return job}// is job errored already
 
-    const userBalance = user.credits;
+    let userBalance = 0;
+    if (user) {
+        userBalance = user.credits;
+    }
     
     console.log("userAllowedJob user ", user);
     console.log("userAllowedJob userBalance", userBalance, "B - JC < 0", (userBalance - jobCost) < 0, "jobCost", jobCost);
 
-    if((userBalance - jobCost) < 0){
+    if(user && (userBalance - jobCost) < 0){
         job.error = 'Insufficient :coin:';
         console.log("job must error, jub most errour", job);
         return job;
